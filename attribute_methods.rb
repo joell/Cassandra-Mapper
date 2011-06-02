@@ -33,6 +33,10 @@ module CassandraMapper
     end
 
     module InstanceMethods
+      def attributes
+        @attributes
+      end
+
       def attributes=(attrs)
         sanitize_for_mass_assignment(attrs).each  do |k,v|
           if respond_to?("#{k}=")
