@@ -36,9 +36,8 @@ module CassandraMapper
       def initialize(attrs={})
         super
         @attributes = self.class.properties.reduce({})  do |as, prop|
-            if default = prop[1][:options][:default]
-              as[prop[0]] = default
-            end
+            opts = prop[1][:options]
+            as[prop[0]] = opts[:default]  if opts.has_key? :default
             as
           end.with_indifferent_access
         self.attributes = attrs
