@@ -4,6 +4,7 @@ require 'active_support/core_ext/hash/indifferent_access'
 
 require 'cassandra_mapper/attribute_methods/read'
 require 'cassandra_mapper/attribute_methods/write'
+require 'cassandra_mapper/attribute_methods/associate_embeds'
 require 'cassandra_mapper/attribute_methods/dirty'
 
 module CassandraMapper
@@ -14,6 +15,7 @@ module CassandraMapper
     included do
       include Read
       include Write
+      include AssociateEmbeds
       include Dirty
       include ActiveModel::MassAssignmentSecurity
 

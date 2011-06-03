@@ -4,6 +4,7 @@ require 'active_support/concern'
 require 'json'
 
 require 'cassandra_mapper/attribute_methods'
+require 'cassandra_mapper/embedded_document/dirty'
 require 'cassandra_mapper/properties'
 require 'cassandra_mapper/serialization'
 
@@ -17,6 +18,9 @@ module CassandraMapper
 
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
+      include CassandraMapper::EmbeddedDocument::Dirty
+
+      attr_accessor :_parent_document
     end
 
     module ClassMethods
