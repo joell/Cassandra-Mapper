@@ -1,5 +1,4 @@
 require 'active_model/naming'
-require 'active_model/serializers/json'
 require 'active_support/concern'
 require 'json'
 
@@ -14,8 +13,6 @@ module CassandraMapper
     include ActiveModel::Naming
 
     included do
-      include ActiveModel::Serializers::JSON
-
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
       include CassandraMapper::EmbeddedDocument::Dirty
@@ -24,13 +21,25 @@ module CassandraMapper
     end
 
     module ClassMethods
-      def from_json(str)
-        new.from_json(str).tap  do |doc|
+      def json_create(object)
+        attrs = object['attributes'].each_with_object({})  do |(k,v), h|
+          type = properties[k][:type]
+          h[k] = case
+            when type <= Time, type <= Date then
+              CassandraMapper::Serialization.int_to_time(v, type)
+            else v
+          end
+        end
+        new(attrs).tap do |doc|
           doc.changed_attributes.clear
         end
       end
 
-      alias_method :load, :from_json
+      def load(str)
+        JSON.parse(str).tap do |doc|
+          raise TypeError, "JSON does not parse to a #{self.name}"  unless doc.is_a? self
+        end
+      end
     end
 
     module InstanceMethods
@@ -39,9 +48,21 @@ module CassandraMapper
           other.instance_variable_get(:@attributes) == attributes
       end
 
-      def save_to_bytes
-        to_json
+      def save_to_bytes(*args)
+        attrs = attributes.each_with_object({})  do |(k,v), h|
+          h[k] = case v
+            when Time, Date  then CassandraMapper::Serialization.time_to_int(v)
+            else v
+          end
+        end
+
+        {
+          JSON.create_id => self.class.name,
+          :attributes    => attrs
+        }.to_json(*args).tap  { changed_attributes.clear }
       end
+
+      alias_method :to_json, :save_to_bytes
     end
   end
 end

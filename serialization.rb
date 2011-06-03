@@ -52,8 +52,8 @@ module CassandraMapper
 
       def time_to_int(t)
         case t
-          when Time  then t.to_i
-          when Date  then t.to_time.to_i
+          when Time      then t.to_i
+          when Date      then t.to_time.to_i
         end
       end
 
