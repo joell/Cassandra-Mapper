@@ -2,25 +2,19 @@ require 'active_model'
 require 'active_support/concern'
 require 'active_support/core_ext/hash/indifferent_access'
 
+require 'cassandra_mapper/attribute_methods/read'
+require 'cassandra_mapper/attribute_methods/write'
+require 'cassandra_mapper/attribute_methods/dirty'
+
 module CassandraMapper
   module AttributeMethods
     extend ActiveSupport::Concern
     include ActiveModel::AttributeMethods
 
     included do
-      attribute_method_suffix ''   # read
-      attribute_method_suffix '='  # write
-
-      private
-      def attribute(name)
-        @attributes[name] if @attributes.include?(name)
-      end
-
-      def attribute=(name, value)
-        @attributes[name] = value
-      end
-
-      public
+      include Read
+      include Write
+      include Dirty
       include ActiveModel::MassAssignmentSecurity
 
       attr_protected :key

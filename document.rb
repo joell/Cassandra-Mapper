@@ -1,4 +1,4 @@
-require 'active_model'
+require 'active_model/naming'
 require 'active_support/concern'
 
 require 'cassandra_mapper/attribute_methods'
@@ -11,9 +11,9 @@ module CassandraMapper
 
     included do
       extend  ActiveModel::Naming
+      include CassandraMapper::Persistence
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
-      include CassandraMapper::Persistence
 
       attr_reader :key
     end
