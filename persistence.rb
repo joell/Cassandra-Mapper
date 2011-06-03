@@ -46,13 +46,13 @@ module CassandraMapper
       end
 
       def save(options = {})
-        # TODO: If updating (i.e., @new is false), use Dirty tagging to only
-        #   upload columns that changed
         _run_save_callbacks do
           @key ||= SimpleUUID::UUID.new.to_guid
           column_family = self.class.model_name.collection
           @raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
-          CassandraMapper.client.insert(column_family, @key, @raw_columns, options)
+          changed_columns = @raw_columns.dup
+          changed_columns.select! { |k,v| changed_attributes.include?(k) }  unless @is_new
+          CassandraMapper.client.insert(column_family, @key, changed_columns, options)
 
           @is_new = false
         end
