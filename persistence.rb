@@ -15,16 +15,18 @@ module CassandraMapper
 
       define_model_callbacks :save, :destroy
 
-      attr_reader :key
+      attr_reader :key, :raw_columns
     end
 
     module ClassMethods
       def load(key, options = {})
         column_family = model_name.collection
-        columns = CassandraMapper.client.get(column_family, key, options)
-        new(CassandraMapper::Serialization.deserialize_attributes(columns, properties)).tap do |doc|
+        raw_columns = CassandraMapper.client.get(column_family, key, options)
+        new(CassandraMapper::Serialization.deserialize_attributes(raw_columns, properties)).tap do |doc|
           doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)
+          doc.instance_variable_set(:@raw_columns, raw_columns)
+          doc.changed_attributes.clear
         end
       end
 
@@ -49,8 +51,8 @@ module CassandraMapper
         _run_save_callbacks do
           @key ||= SimpleUUID::UUID.new.to_guid
           column_family = self.class.model_name.collection
-          attrs = CassandraMapper::Serialization.serialize_attributes(attributes)
-          CassandraMapper.client.insert(column_family, @key, attrs, options)
+          @raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
+          CassandraMapper.client.insert(column_family, @key, @raw_columns, options)
 
           @is_new = false
         end
