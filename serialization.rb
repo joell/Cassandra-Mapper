@@ -1,4 +1,5 @@
 require 'cassandra'
+require 'cassandra_mapper/embedded_document'
 require 'date'
 require 'json'
 
@@ -36,29 +37,30 @@ module CassandraMapper
       end
 
       def deserialize_value(bytes, type)
-        case type.to_s.to_sym
-          when :Integer  then Cassandra::Long.new(bytes).to_i
-          when :Float    then bytes.unpack('G')[0]
-          when :String   then bytes
-          when :Boolean  then not bytes == "\0"
-          when :Time, :Date, :DateTime
+        case
+          when type <= CassandraMapper::EmbeddedDocument  then type.from_json(bytes)
+          when type <= Time, type <= Date
             then int_to_time(deserialize_value(bytes, Integer), type)
-          else                JSON.parse(bytes)
+          when type <= Integer  then Cassandra::Long.new(bytes).to_i
+          when type <= Float    then bytes.unpack('G')[0]
+          when type <= String   then bytes
+          when type <= Boolean  then not bytes == "\0"
+          else                       JSON.parse(bytes)
         end
       end
 
       def time_to_int(t)
         case t
-          when Time      then t.to_i
-          when Date      then t.to_time.to_i
+          when Time  then t.to_i
+          when Date  then t.to_time.to_i
         end
       end
 
       def int_to_time(t, type)
-        case type.to_s.to_sym
-          when :Time      then Time.at(t)
-          when :Date      then int_to_time(t, Time).to_date
-          when :DateTime  then int_to_time(t, Time).to_datetime
+        case
+          when type <= DateTime  then int_to_time(t, Time).to_datetime
+          when type <= Date      then int_to_time(t, Time).to_date
+          when type <= Time      then Time.at(t)
         end
       end
     end
