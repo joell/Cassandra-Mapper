@@ -16,3 +16,8 @@ module CassandraMapper
     end
   end
 end
+
+# a Boolean "type" for properties
+unless defined?(Boolean)
+  module ::Boolean; end
+end
