@@ -14,6 +14,8 @@ module CassandraMapper
       extend ActiveModel::Callbacks
 
       define_model_callbacks :save, :destroy
+
+      attr_reader :key
     end
 
     module ClassMethods

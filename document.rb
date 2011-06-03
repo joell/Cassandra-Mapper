@@ -14,8 +14,6 @@ module CassandraMapper
       include CassandraMapper::Persistence
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
-
-      attr_reader :key
     end
   end
 end

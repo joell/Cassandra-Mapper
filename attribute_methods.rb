@@ -17,7 +17,7 @@ module CassandraMapper
       include Dirty
       include ActiveModel::MassAssignmentSecurity
 
-      attr_protected :key
+      attr_protected :key  # defined in Persistence
     end
 
     module ClassMethods
