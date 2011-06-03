@@ -44,21 +44,6 @@ module CassandraMapper
         self.attributes = attrs
       end
 
-      def attributes
-        @attributes
-      end
-
-      def attributes=(attrs)
-        sanitize_for_mass_assignment(attrs).each  do |k,v|
-          if respond_to?("#{k}=")
-            __send__("#{k}=", v)
-          else
-            raise ArgumentError, "undefined property: prop = #{k}," +
-                                 " class = #{self.class.name}"
-          end
-        end
-      end
-
       def freeze
         @attributes.freeze; super
       end
@@ -71,6 +56,22 @@ module CassandraMapper
       def respond_to?(*args)
         self.class.define_attribute_methods
         super
+      end
+
+      private
+      def attributes=(attrs)
+        sanitize_for_mass_assignment(attrs).each  do |k,v|
+          if respond_to?("#{k}=")
+            __send__("#{k}=", v)
+          else
+            raise ArgumentError, "undefined property: prop = #{k}," +
+                                 " class = #{self.class.name}"
+          end
+        end
+      end
+
+      def attributes
+        @attributes
       end
     end
   end

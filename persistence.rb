@@ -18,9 +18,9 @@ module CassandraMapper
 
     module ClassMethods
       def load(key, options = {})
-        column_family = self.model_name.collection
+        column_family = model_name.collection
         columns = CassandraMapper.client.get(column_family, key, options)
-        self.new(CassandraMapper::Serialization.deserialize_attributes(columns, self.properties)).tap do |doc|
+        new(CassandraMapper::Serialization.deserialize_attributes(columns, properties)).tap do |doc|
           doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)
         end
@@ -47,7 +47,7 @@ module CassandraMapper
         _run_save_callbacks do
           @key ||= SimpleUUID::UUID.new.to_guid
           column_family = self.class.model_name.collection
-          attrs = CassandraMapper::Serialization.serialize_attributes(self.attributes)
+          attrs = CassandraMapper::Serialization.serialize_attributes(attributes)
           CassandraMapper.client.insert(column_family, @key, attrs, options)
 
           @is_new = false
@@ -57,8 +57,8 @@ module CassandraMapper
 
       def destroy(options={})
         column_family = self.class.model_name.collection
-        CassandraMapper.client.remove(column_family, self.key, options)  unless new?
-        self.freeze
+        CassandraMapper.client.remove(column_family, key, options)  unless new?
+        freeze
         true
       rescue
         false

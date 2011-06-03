@@ -20,7 +20,7 @@ module CassandraMapper
       def json_create(object)
         puts "json_create.object: #{object.inspect}"  # DEBUG
         attrs = object['attributes'].each_with_object({})  do |(k,v), h|
-          type = self.properties[k][:type]
+          type = properties[k][:type]
           h[k] = case type.to_s.to_sym
             when :Time, :Date, :DateTime  then
               CassandraMapper::Serialization.int_to_time(v, type)
@@ -29,17 +29,18 @@ module CassandraMapper
         end
 
         puts "json_create.attrs: #{attrs.inspect}"  # DEBUG
-        self.new(attrs)
+        new(attrs)
       end
     end
 
     module InstanceMethods
       def ==(other)
-        other.instance_of?(self.class) && other.attributes == self.attributes
+        other.instance_of?(self.class) &&
+          other.instance_variable_get(:@attributes) == attributes
       end
 
       def to_json(*args)
-        attrs = self.attributes.each_with_object({})  do |(k,v), h|
+        attrs = attributes.each_with_object({})  do |(k,v), h|
           h[k] = case v
             when Time, Date  then CassandraMapper::Serialization.time_to_int(v)
             else v
