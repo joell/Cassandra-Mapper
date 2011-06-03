@@ -13,7 +13,7 @@ module CassandraMapper
     included do
       extend ActiveModel::Callbacks
 
-      define_model_callbacks :save
+      define_model_callbacks :save, :destroy
     end
 
     module ClassMethods
@@ -53,6 +53,15 @@ module CassandraMapper
           @is_new = false
         end
         true
+      end
+
+      def destroy(options={})
+        column_family = self.class.model_name.collection
+        CassandraMapper.client.remove(column_family, self.key, options)  unless new?
+        self.freeze
+        true
+      rescue
+        false
       end
     end
   end

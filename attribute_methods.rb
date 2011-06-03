@@ -33,6 +33,17 @@ module CassandraMapper
     end
 
     module InstanceMethods
+      def initialize(attrs={})
+        super
+        @attributes = self.class.properties.reduce({})  do |as, prop|
+            if default = prop[1][:options][:default]
+              as[prop[0]] = default
+            end
+            as
+          end.with_indifferent_access
+        self.attributes = attrs
+      end
+
       def attributes
         @attributes
       end
@@ -48,15 +59,8 @@ module CassandraMapper
         end
       end
 
-      def initialize(attrs={})
-        super
-        @attributes = self.class.properties.inject({})  do |as, prop|
-            if default = prop[1][:options][:default]
-              as[prop[0]] = default
-            end
-            as
-          end.with_indifferent_access
-        self.attributes = attrs
+      def freeze
+        @attributes.freeze; super
       end
 
       def method_missing(method, *args, &block)
