@@ -31,11 +31,17 @@ module CassandraMapper
     module InstanceMethods
       def initialize(attrs={})
         super
-        @attributes = self.class.properties.reduce({})  do |as, prop|
+
+        # set up the attributes with any established defaults
+        @attributes = {}.with_indifferent_access
+        self.attributes = self.class.properties.reduce({})  do |as, prop|
             opts = prop[1][:options]
             as[prop[0]] = opts[:default]  if opts.has_key? :default
             as
-          end.with_indifferent_access
+          end
+        changed_attributes.clear       # default values don't count as "changed"
+
+        # assign the additional supplied attribute values
         self.attributes = attrs
       end
 
