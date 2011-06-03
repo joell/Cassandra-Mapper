@@ -21,7 +21,7 @@ module CassandraMapper
         column_family = self.model_name.collection
         columns = CassandraMapper.client.get(column_family, key, options)
         self.new(CassandraMapper::Serialization.deserialize_attributes(columns, self.properties)).tap do |doc|
-          doc.key = key
+          doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)
         end
       end
@@ -45,10 +45,10 @@ module CassandraMapper
         # TODO: If updating (i.e., @new is false), use Dirty tagging to only
         #   upload columns that changed
         _run_save_callbacks do
-          self.key ||= SimpleUUID::UUID.new.to_guid
+          @key ||= SimpleUUID::UUID.new.to_guid
           column_family = self.class.model_name.collection
           attrs = CassandraMapper::Serialization.serialize_attributes(self.attributes)
-          CassandraMapper.client.insert(column_family, self.key, attrs, options)
+          CassandraMapper.client.insert(column_family, @key, attrs, options)
 
           @is_new = false
         end
