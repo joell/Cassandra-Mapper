@@ -7,7 +7,6 @@ module Dirty
 
   def save(*args)
     super(*args).tap do
-      @previously_changed = changes
       changed_attributes.clear
     end
   end
