@@ -11,11 +11,8 @@ module CassandraMapper
         attr_accessor :embed_will_change
       end
 
-      private
-      def attribute=(name, value)
-        if self.class.properties.has_key?(name) && @attributes[name] != value
-          embed_will_change.call  unless not embed_will_change
-        end
+      def attribute_will_change!(name)
+        embed_will_change.call  if embed_will_change
         super
       end
     end
