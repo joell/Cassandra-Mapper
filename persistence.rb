@@ -56,12 +56,16 @@ module CassandraMapper
       end
 
       def destroy(options={})
-        column_family = self.class.model_name.collection
-        CassandraMapper.client.remove(column_family, key, options)  unless new?
-        freeze
-        true
-      rescue
-        false
+        _run_destroy_callbacks do
+          begin
+            column_family = self.class.model_name.collection
+            CassandraMapper.client.remove(column_family, key, options)  unless new?
+            freeze
+            true
+          rescue
+            false
+          end
+        end
       end
     end
   end
