@@ -23,24 +23,38 @@ module CassandraMapper
 
       def serialize_value(v)
         case v
-          when Integer   then Cassandra::Long.new(v).to_s
-          when Time      then serialize_value(v.to_i)
-          when DateTime  then serialize_value(v.to_time)
-          when String    then v
+          when Integer     then Cassandra::Long.new(v).to_s
+          when String      then v
+          when Time, Date  then serialize_value(time_to_int(v))
           else
-            json = v.to_json
-            raise ArgumentError  unless JSON.parse(json) == v
-            json
+            v.to_json.tap do |json|
+              raise ArgumentError  unless JSON.parse(json) == v
+            end
         end
       end
 
       def deserialize_value(bytes, type)
         case type.to_s.to_sym
-          when :Integer   then Cassandra::Long.new(bytes).to_i
-          when :Time      then Time.at(deserialize_value(bytes, Integer))
-          when :DateTime  then deserialize_value(v, Time).to_datetime
-          when :String    then bytes
-          else                 JSON.parse(bytes)
+          when :Integer  then Cassandra::Long.new(bytes).to_i
+          when :String   then bytes
+          when :Time, :Date, :DateTime
+            then int_to_time(deserialize_value(bytes, Integer), type)
+          else                JSON.parse(bytes)
+        end
+      end
+
+      def time_to_int(t)
+        case t
+          when Time      then t.to_i
+          when Date      then t.to_time.to_i
+        end
+      end
+
+      def int_to_time(t, type)
+        case type.to_s.to_sym
+          when :Time      then Time.at(t)
+          when :Date      then int_to_time(t, Time).to_date
+          when :DateTime  then int_to_time(t, Time).to_datetime
         end
       end
     end
