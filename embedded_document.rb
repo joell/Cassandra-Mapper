@@ -18,7 +18,6 @@ module CassandraMapper
 
     module ClassMethods
       def json_create(object)
-        puts "json_create.object: #{object.inspect}"  # DEBUG
         attrs = object['attributes'].each_with_object({})  do |(k,v), h|
           type = properties[k][:type]
           h[k] = case type.to_s.to_sym
@@ -27,8 +26,6 @@ module CassandraMapper
             else v
           end
         end
-
-        puts "json_create.attrs: #{attrs.inspect}"  # DEBUG
         new(attrs)
       end
     end
