@@ -25,12 +25,18 @@ module CassandraMapper
           doc.changed_attributes.clear
         end
       end
+
+      alias_method :load, :from_json
     end
 
     module InstanceMethods
       def ==(other)
         other.instance_of?(self.class) &&
           other.instance_variable_get(:@attributes) == attributes
+      end
+
+      def save_to_bytes
+        to_json
       end
     end
   end
