@@ -22,7 +22,7 @@ module CassandraMapper
         columns = CassandraMapper.client.get(column_family, key, options)
         self.new(CassandraMapper::Serialization.deserialize_attributes(columns, self.properties)).tap do |doc|
           doc.key = key
-          doc.instance_variable_set(:@new, false)
+          doc.instance_variable_set(:@is_new, false)
         end
       end
 
