@@ -16,8 +16,6 @@ module CassandraMapper
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
       include CassandraMapper::EmbeddedDocument::Dirty
-
-      attr_accessor :_parent_document
     end
 
     module ClassMethods
