@@ -1,3 +1,5 @@
+require 'active_support/concern'
+require 'active_model/attribute_methods'
 require 'active_model/dirty'
 require 'json'
 
@@ -5,6 +7,7 @@ require 'cassandra_mapper/embedded_document/dirty'
 
 module CassandraMapper
   class Many
+    include ActiveModel::AttributeMethods
     include ActiveModel::Dirty
     include CassandraMapper::EmbeddedDocument::Dirty
 
