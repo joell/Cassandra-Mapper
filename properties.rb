@@ -24,5 +24,9 @@ end
 
 # a Boolean "type" for properties
 unless defined?(Boolean)
-  module ::Boolean; end
+  module ::Boolean
+    def self.<=(other)
+      other == TrueClass || other == FalseClass || other == Boolean
+    end
+  end
 end
