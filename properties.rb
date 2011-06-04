@@ -1,4 +1,5 @@
 require 'active_support/core_ext/hash/indifferent_access'
+require 'cassandra_mapper/many'
 
 module CassandraMapper
   module Properties
@@ -13,6 +14,10 @@ module CassandraMapper
 
     def property(key, type, options={})
       properties[key.to_sym] = {:type => type, :options => options}
+    end
+
+    def many(key, options={})
+      property(key, CassandraMapper::Many, options)
     end
   end
 end

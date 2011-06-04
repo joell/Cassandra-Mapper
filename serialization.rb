@@ -1,5 +1,6 @@
 require 'cassandra'
 require 'cassandra_mapper/embedded_document'
+require 'cassandra_mapper/many'
 require 'date'
 require 'json'
 
@@ -29,7 +30,9 @@ module CassandraMapper
           when String                 then v
           when TrueClass, FalseClass  then v ? "\1" : "\0"
           when Time, Date             then serialize_value(time_to_int(v))
-          when CassandraMapper::EmbeddedDocument  then v.save_to_bytes
+          when CassandraMapper::Many,
+               CassandraMapper::EmbeddedDocument
+            then v.save_to_bytes
           else
             v.to_json.tap do |json|
               raise ArgumentError  unless JSON.parse(json) == v
@@ -39,7 +42,9 @@ module CassandraMapper
 
       def deserialize_value(bytes, type)
         case
-          when type <= CassandraMapper::EmbeddedDocument  then type.load(bytes)
+          when type <= CassandraMapper::Many,
+               type <= CassandraMapper::EmbeddedDocument
+            then type.load(bytes)
           when type <= Time, type <= Date
             then int_to_time(deserialize_value(bytes, Integer), type)
           when type <= Integer  then Cassandra::Long.new(bytes).to_i
