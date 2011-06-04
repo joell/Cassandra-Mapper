@@ -50,20 +50,22 @@ module CassandraMapper
       end
 
       def save(options = {})
-        _run_save_callbacks do
+        written = false
+        was_success = _run_save_callbacks  do
           column_family = self.class.model_name.collection
           @raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
           changed_columns = @raw_columns.dup
           changed_columns.select! { |k,v| changed_attributes.include?(k) }  unless @is_new
           CassandraMapper.client.insert(column_family, key, changed_columns, options)
-
-          @is_new = false
+          written = true
         end
-        true
+
+        @is_new = !written
+        was_success
       end
 
       def destroy(options={})
-        _run_destroy_callbacks do
+        _run_destroy_callbacks  do
           begin
             column_family = self.class.model_name.collection
             CassandraMapper.client.remove(column_family, key, options)  unless new?
