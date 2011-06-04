@@ -2,6 +2,7 @@ require 'active_model/naming'
 require 'active_support/concern'
 
 require 'cassandra_mapper/attribute_methods'
+require 'cassandra_mapper/ordering'
 require 'cassandra_mapper/persistence'
 require 'cassandra_mapper/properties'
 
@@ -14,6 +15,7 @@ module CassandraMapper
       include CassandraMapper::Persistence
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
+      include CassandraMapper::Ordering
     end
   end
 end
