@@ -16,6 +16,7 @@ module CassandraMapper
       define_model_callbacks :save, :destroy
 
       attr_reader :raw_columns
+      attr_reader :timestamp
     end
 
     module ClassMethods
@@ -23,8 +24,10 @@ module CassandraMapper
         column_family = model_name.collection
         raw_columns = CassandraMapper.client.get(column_family, key, options)
         new(CassandraMapper::Serialization.deserialize_attributes(raw_columns, properties)).tap do |doc|
+          last_updated = raw_columns.timestamps.values.max
           doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)
+          doc.instance_variable_set(:@timestamp, last_updated)
           doc.instance_variable_set(:@raw_columns, raw_columns)
           doc.changed_attributes.clear
         end
@@ -56,7 +59,12 @@ module CassandraMapper
           @raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
           changed_columns = @raw_columns.dup
           changed_columns.select! { |k,v| changed_attributes.include?(k) }  unless @is_new
+
+          now = Time.stamp
+          options[:timestamp] = now
           CassandraMapper.client.insert(column_family, key, changed_columns, options)
+
+          @timestamp = now
           written = true
         end
 
