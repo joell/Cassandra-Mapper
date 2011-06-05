@@ -35,7 +35,8 @@ module CassandraMapper
 
             # add our key in the ordering at the location for our new ordered value
             col = serialize_value(attributes[order_name])
-            CassandraMapper.client.insert(column_family, row, {col => {self.key => ""}})
+            CassandraMapper.client.insert(column_family, row, {col => {self.key => ""}},
+                                          :timestamp => timestamp)
           end
         end
 
