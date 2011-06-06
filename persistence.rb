@@ -21,7 +21,6 @@ module CassandraMapper
 
     module ClassMethods
       def load(key, options = {})
-        column_family = model_name.collection
         _raw_columns = CassandraMapper.client.get(column_family, key, options)
         new(CassandraMapper::Serialization.deserialize_attributes(_raw_columns, properties)).tap do |doc|
           last_updated = _raw_columns.timestamps.values.max
@@ -36,6 +35,10 @@ module CassandraMapper
       def find(key, *args)
         self.load(key, *args) rescue nil
       end
+
+      def column_family
+        model_name.collection
+      end
     end
 
     module InstanceMethods
@@ -49,20 +52,21 @@ module CassandraMapper
       end
 
       def key
-        @key ||= SimpleUUID::UUID.new.to_guid
+        @key ||= generate_key
       end
 
-      def save(options = {})
+      def save(write_key = key, options = {})
         written = false
         was_success = _run_save_callbacks  do
-          column_family = self.class.model_name.collection
           @_raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
           changed_columns = @_raw_columns.dup
           changed_columns.select! { |k,v| changed_attributes.include?(k) }  unless @is_new
 
           now = Time.stamp
           options[:timestamp] = now
-          CassandraMapper.client.insert(column_family, key, changed_columns, options)
+          CassandraMapper.client.insert(self.class.column_family, write_key,
+                                        changed_columns, options)
+          key = write_key
 
           @timestamp = now
           written = true
@@ -75,14 +79,19 @@ module CassandraMapper
       def destroy(options={})
         _run_destroy_callbacks  do
           begin
-            column_family = self.class.model_name.collection
-            CassandraMapper.client.remove(column_family, key, options)  unless new?
+            cf = self.class.column_family
+            CassandraMapper.client.remove(cf, key, options)  unless new?
             freeze
             true
           rescue
             false
           end
         end
+      end
+
+      private
+      def generate_key
+        SimpleUUID::UUID.new.to_guid
       end
     end
   end
