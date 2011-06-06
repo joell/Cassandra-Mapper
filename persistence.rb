@@ -15,20 +15,20 @@ module CassandraMapper
 
       define_model_callbacks :save, :destroy
 
-      attr_reader :raw_columns
+      attr_reader :_raw_columns
       attr_reader :timestamp
     end
 
     module ClassMethods
       def load(key, options = {})
         column_family = model_name.collection
-        raw_columns = CassandraMapper.client.get(column_family, key, options)
-        new(CassandraMapper::Serialization.deserialize_attributes(raw_columns, properties)).tap do |doc|
-          last_updated = raw_columns.timestamps.values.max
+        _raw_columns = CassandraMapper.client.get(column_family, key, options)
+        new(CassandraMapper::Serialization.deserialize_attributes(_raw_columns, properties)).tap do |doc|
+          last_updated = _raw_columns.timestamps.values.max
           doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)
           doc.instance_variable_set(:@timestamp, last_updated)
-          doc.instance_variable_set(:@raw_columns, raw_columns)
+          doc.instance_variable_set(:@_raw_columns, _raw_columns)
           doc.changed_attributes.clear
         end
       end
@@ -56,8 +56,8 @@ module CassandraMapper
         written = false
         was_success = _run_save_callbacks  do
           column_family = self.class.model_name.collection
-          @raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
-          changed_columns = @raw_columns.dup
+          @_raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
+          changed_columns = @_raw_columns.dup
           changed_columns.select! { |k,v| changed_attributes.include?(k) }  unless @is_new
 
           now = Time.stamp

@@ -21,7 +21,7 @@ module CassandraMapper
       include Dirty
       include ActiveModel::MassAssignmentSecurity
 
-      attr_protected :key, :raw_columns, :timestamp  # defined in Persistence
+      attr_protected :key, :_raw_columns, :timestamp  # defined in Persistence
     end
 
     module ClassMethods
