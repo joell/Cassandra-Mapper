@@ -1,6 +1,7 @@
+require 'active_support/core_ext/hash/keys'
 require 'cassandra'
-
-require 'cassandra_mapper/document'
+require 'erb'
+require 'yaml'
 
 module CassandraMapper
   class << self
@@ -15,11 +16,15 @@ module CassandraMapper
     end
 
     def client_config
-      # TODO: Actually read a YAML file to get these values or something
-      server   = '127.0.0.1:9160'
-      keyspace = 'CassandraMapper_Dev'
-      options  = {:timeout => 10}
-      [keyspace, server, options]
+      @config.values_at(:keyspace, :server, :options)
+    end
+
+    def load_configuration(config_file)
+      hash = YAML.load(ERB.new(File.read(config_file)).result)
+      @config = hash['cassandra_mapper'].symbolize_keys
+      @config[:options] ||= {}
+      @config[:options].symbolize_keys!
+      true
     end
   end
 end
