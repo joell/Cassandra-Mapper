@@ -56,12 +56,12 @@ module CassandraMapper
       end
 
       def save(write_key = key, options = {})
-        written = false
         was_success = _run_save_callbacks  do
           @_raw_columns = CassandraMapper::Serialization.serialize_attributes(attributes)
           changed_columns = @_raw_columns.dup
-          # if this is a first-time save or an overwrite, we need to write all the columns
-          if !@is_new && write_key != key
+          # if this is a first-time save or an overwrite, we need to write
+          #   all the columns
+          if !@is_new && write_key == key
             changed_columns.select! { |k,v| changed_attributes.include?(k) }
           end
 
@@ -69,13 +69,13 @@ module CassandraMapper
           options[:timestamp] = now
           CassandraMapper.client.insert(self.class.column_family, write_key,
                                         changed_columns, options)
-          key = write_key
+          @key = write_key
 
           @timestamp = now
-          written = true
+          true
         end
 
-        @is_new = !written
+        @is_new = false
         was_success
       end
 
