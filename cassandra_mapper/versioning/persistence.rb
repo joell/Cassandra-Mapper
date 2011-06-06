@@ -10,9 +10,9 @@ module CassandraMapper
       LONG_ZERO = Cassandra::Long.new(0).to_s
 
       included do
-        before_save    :save_old
-        before_destroy :save_old
-        after_save     :reactivate
+        before_save    :save_zombie
+        before_destroy :save_zombie
+        after_save     :post_save_zombie
         after_destroy  :deactivate
 
         property :_num_versions, Integer, :default => 0
@@ -28,18 +28,42 @@ module CassandraMapper
         end
 
         def permanently_destroy
-          without_versioning { destroy }  # destroy the document
+          @without_versioning = true
+          destroy
 
           # destroy the zombies
           CassandraMapper.client.get(ZOMBIE_FAMILY, key).values.each  do |zombie_key|
             CassandraMapper.client.remove(self.class.column_family, zombie_key)
           end
-          CassandraMapper.client.remove(ZOMBIE_FAMILY, key)  # destroy the zombie record
+          # destroy the zombie record
+          CassandraMapper.client.remove(ZOMBIE_FAMILY, key)
+        end
+
+        def save(write_key = key, *args)
+          @overwrite_key = write_key  if write_key != key
+          super(write_key, *args)
+          @overwrite_key = nil
         end
 
         private
-        def save_old
-          unless @without_versioning || new?
+        def save_zombie(*args)
+          key = self.key
+          without_versioning = @without_versioning
+          _raw_columns = self._raw_columns
+
+          # handle the special case of overwriting a different document
+          if !without_versioning && @overwrite_key
+            cf = self.class.column_family
+            _raw_columns = CassandraMapper.client.get(cf, @overwrite_key)
+            if _raw_columns.empty?    # does the target document no longer exists?
+              without_versioning = true
+            else
+              key = @overwrite_key
+            end
+          end
+
+          # if appropriate, retain a copy of the current version of the document
+          unless without_versioning || new?
             # save a copy of the old version of the document (a zombie)
             zombie_key = generate_key
             CassandraMapper.client.insert(self.class.column_family, zombie_key,
@@ -49,20 +73,24 @@ module CassandraMapper
             cols = {LONG_ZERO => version_group,
                     Cassandra::Long.new(timestamp).to_s => zombie_key}
             CassandraMapper.client.insert(ZOMBIE_FAMILY, key, cols)
-            self._num_versions += 1
 
-            # remove the last zombie if we're at max
-            if _num_versions > self.class.max_versions
-              # get the entry for the oldest zombie
-              oldest = CassandraMapper.client.get(ZOMBIE_FAMILY, key,
-                                                  :start => 1, :count => 1)
-              (oldest_col, oldest_key) = oldest.first
-              # remove the zombie from our record
-              CassandraMapper.client.remove(ZOMBIE_FAMILY, key, oldest_col)
-              # destroy the zombie
-              CassandraMapper.client.remove(self.class.column_family, oldest_key)
+            if not @overwrite_key
+              self._num_versions += 1
+              # remove all zombies that exceed our maximum
+              if self._num_versions > self.class.max_versions
+                surplus = self._num_versions - self.class.max_versions
+                # get the entry for the outdated zombies
+                outdated = CassandraMapper.client.get(ZOMBIE_FAMILY, key,
+                                                      :start => 1, :count => surplus)
+                outdated.each do |col, k|
+                  # remove the zombie from our record
+                  CassandraMapper.client.remove(ZOMBIE_FAMILY, key, col)
+                  # destroy the zombie
+                  CassandraMapper.client.remove(self.class.column_family, k)
+                end
 
-              self._num_versions = self.class.max_versions
+                self._num_versions = self.class.max_versions
+              end
             end
 
             # save the old timestamp for when we update the "active" record post-save
@@ -70,9 +98,16 @@ module CassandraMapper
           end
         end
 
-        # Update this doc's timestamp entry from the `actives' family after
-        # it was saved and we have the new timestamp.
-        def reactivate
+        def post_save_zombie
+          # If we overwrote a different document, then we must keep the
+          #   old-versions count consistent.
+          if @overwrite_key
+            # NOTE: We subtract one for the grouping-index column 0.
+            self._num_versions = CassandraMapper.client.count_columns(ZOMBIE_FAMILY, key)-1
+          end
+
+          # Update this doc's timestamp entry from the `actives' family after
+          # it was saved and we have the new timestamp.
           unless @without_versioning
             # remove the old timestamp entry
             deactivate(@_old_timestamp)  unless new?
