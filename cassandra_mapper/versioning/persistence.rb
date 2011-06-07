@@ -95,6 +95,7 @@ module CassandraMapper
 
             # save the old timestamp for when we update the "active" record post-save
             @_old_timestamp = timestamp
+            true
           end
         end
 
@@ -115,6 +116,7 @@ module CassandraMapper
             active_since = Cassandra::Long.new(timestamp).to_s
             CassandraMapper.client.insert(ACTIVES_FAMILY, version_group,
                                           {active_since => {key => ""}})
+          else true
           end
         end
 
