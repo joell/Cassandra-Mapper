@@ -76,6 +76,17 @@ module CassandraMapper
           end
         end
 
+        def find_by_index(indexed_field, value, options={})
+          cf = self.class.column_family
+          idx_expr = {:column_name => indexed_field.to_s,
+                      :value       => serialize_value(value),
+                      :comparison  => "eq"}
+          CassandraMapper.client.get_indexed_slices(cf, [idx_expr], options)
+
+          # return the matching documents
+          cols.keys.map {|key| self.load(key)}
+        end
+
         private
         def serialize_value(*args)
           CassandraMapper::Serialization.serialize_value(*args)
