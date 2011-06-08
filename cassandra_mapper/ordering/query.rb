@@ -50,14 +50,29 @@ module CassandraMapper
         def find_by(order_field, order_val, group_by_val="\0", options={})
           order_name = order_field.to_s
           if orderings.include?(order_name)
+            # ask for one more than our caller so we can provide a continuation index
+            count = options[:count] += 1  if options.has_key? :count
             # retreive the keys for all documents with a matching ordered value
             column_family = "#{self.model_name.collection}_by_#{order_name}"
             row     = serialize_value(group_by_val)
             sup_col = serialize_value(order_val)
-            cols    = CassandraMapper.client.get(column_family, row, sup_col)
+            cols    = CassandraMapper.client.get(column_family, row, sup_col, options)
 
+            # identify the next column to start with in order to continue this query
+            next_start = nil
+            if cols.length == count
+              next_start = cols.keys.last
+              cols.delete(next_start)
+            end
+
+            docs = cols.keys.map {|key| self.load(key)}
             # return the matching documents
-            cols.keys.map {|key| self.load(key)}
+            if count
+              { :docs       => docs,
+                :next_start => next_start && deserialize_value(next_start, order_type) }
+            else
+              docs
+            end
           end
         end
 
