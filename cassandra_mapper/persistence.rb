@@ -26,6 +26,7 @@ module CassandraMapper
 
       def load(key, options = {})
         _raw_columns = CassandraMapper.client.get(column_family, key, options)
+        raise CassandraThrift::NotFoundException  if _raw_columns.empty?
         new(CassandraMapper::Serialization.deserialize_attributes(_raw_columns, properties)).tap do |doc|
           last_updated = _raw_columns.timestamps.values.max
           doc.instance_variable_set(:@key, key)
