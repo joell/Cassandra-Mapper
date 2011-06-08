@@ -25,6 +25,7 @@ module CassandraMapper
 
       def serialize_value(v)
         case v
+          when NilClass               then "\0"
           when Integer                then Cassandra::Long.new(v).to_s
           when Float                  then [v].pack('G')
           when String                 then v
@@ -52,6 +53,7 @@ module CassandraMapper
           when type <= Float    then bytes.unpack('G')[0]
           when type <= String   then bytes
           when type <= Boolean  then not bytes == "\0"
+          when bytes == "\0"    then nil
           else                       JSON.parse(bytes)
         end
       end
