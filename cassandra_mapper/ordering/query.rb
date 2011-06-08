@@ -40,7 +40,7 @@ module CassandraMapper
             order_type = properties[order_field][:type]
             doc_keys = super_columns.values.map(&:keys).flatten
             { :docs       => doc_keys.map  {|key| self.load(key)},
-              :next_start => deserialize_value(next_start, order_type) }
+              :next_start => next_start && deserialize_value(next_start, order_type) }
 
           else raise NotImplementedError,
                  "The field #{order_name} of #{self.name} is not ordered."
