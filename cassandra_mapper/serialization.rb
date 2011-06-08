@@ -42,8 +42,9 @@ module CassandraMapper
 
       def deserialize_value(bytes, type)
         case
-          when type <= CassandraMapper::Many,
-               type <= CassandraMapper::EmbeddedDocument
+          when type.class == Array && type[0] == CassandraMapper::Many
+            then CassandraMapper::Many.load(bytes, type[1], type[2])
+          when type <= CassandraMapper::EmbeddedDocument
             then type.load(bytes)
           when type <= Time, type <= Date
             then int_to_time(deserialize_value(bytes, Integer), type)

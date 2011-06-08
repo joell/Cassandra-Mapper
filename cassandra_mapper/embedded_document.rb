@@ -1,6 +1,6 @@
 require 'active_model/naming'
 require 'active_support/concern'
-require 'json'
+require 'active_model/serialization'
 
 require 'cassandra_mapper/attribute_methods'
 require 'cassandra_mapper/embedded_document/dirty'
@@ -9,35 +9,41 @@ require 'cassandra_mapper/serialization'
 
 module CassandraMapper
   module EmbeddedDocument
-    extend ActiveSupport::Concern
+    extend  ActiveSupport::Concern
+    include ActiveModel::Serializers::JSON
     include ActiveModel::Naming
 
     included do
       extend  CassandraMapper::Properties
       include CassandraMapper::AttributeMethods
       include CassandraMapper::EmbeddedDocument::Dirty
+
+      def attribute=(name, value)
+        # if this is an embedded document or `many' attribute that was assigned
+        #   a JSON-structured hash, then auto-convert it before assignment
+        type = self.class.properties[name][:type]
+        if value.class <= Hash
+          if type <= CassandraMapper::EmbeddedDocument
+            value = type.new(value)
+          elsif type.class == Array && type[0] == CassandraMapper::Many
+            value = CassandraMapper::Many.new(type[1], type[2], value)
+          end
+        end
+
+        super(name, value)
+      end
+
+      self.include_root_in_json = false  # these are *embedded* documents
     end
 
     module ClassMethods
-      def json_create(object)
-        attrs = object['attributes'].each_with_object({})  do |(k,v), h|
-          type = properties[k][:type]
-          h[k] = case
-            when type <= Time, type <= Date then
-              CassandraMapper::Serialization.int_to_time(v, type)
-            else v
-          end
-        end
-        new(attrs).tap do |doc|
+      def from_json(json_str)
+        self.new.from_json(json_str).tap do |doc|
           doc.changed_attributes.clear
         end
       end
 
-      def load(str)
-        JSON.parse(str).tap do |doc|
-          raise TypeError, "JSON does not parse to a #{self.name}"  unless doc.is_a? self
-        end
-      end
+      alias_method :load, :from_json
     end
 
     module InstanceMethods
@@ -46,21 +52,28 @@ module CassandraMapper
           other.instance_variable_get(:@attributes) == attributes
       end
 
-      def save_to_bytes(*args)
-        attrs = attributes.each_with_object({})  do |(k,v), h|
-          h[k] = case v
-            when Time, Date  then CassandraMapper::Serialization.time_to_int(v)
-            else v
+      def as_json(options = nil)
+        # do the shallow, one-level conversion
+        super(options).tap do |partial|
+
+          # find all properties that are embedded documents
+          embed_props = self.class.properties.select  do |k,v|
+            type = v[:type]
+            type.class == Array && type[0] == CassandraMapper::Many ||
+              type <= CassandraMapper::EmbeddedDocument
+          end
+          # recursively apply the conversion to the embeds
+          embed_props.keys.each  do |attr|
+            partial[attr] = partial[attr].as_json
           end
         end
-
-        {
-          JSON.create_id => self.class.name,
-          :attributes    => attrs
-        }.to_json(*args).tap  { changed_attributes.clear }
       end
 
-      alias_method :to_json, :save_to_bytes
+      def save_to_bytes
+        to_json.tap do
+          changed_attributes.clear
+        end
+      end
     end
   end
 end
