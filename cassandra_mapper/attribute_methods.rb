@@ -4,7 +4,7 @@ require 'active_support/core_ext/hash/indifferent_access'
 
 require 'cassandra_mapper/attribute_methods/read'
 require 'cassandra_mapper/attribute_methods/write'
-require 'cassandra_mapper/attribute_methods/many_wrap_arrays'
+require 'cassandra_mapper/attribute_methods/write_casts'
 require 'cassandra_mapper/attribute_methods/associate_embeds'
 require 'cassandra_mapper/attribute_methods/dirty'
 
@@ -17,7 +17,7 @@ module CassandraMapper
       include Read
       include Write
       include AssociateEmbeds
-      include ManyWrapArrays
+      include WriteCasts
       include Dirty
       include ActiveModel::MassAssignmentSecurity
 
