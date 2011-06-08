@@ -15,7 +15,7 @@ module CassandraMapper
         #   :count    => max number of results
         #   :reversed => reverse the ordering
         #   :consistency => Cassandra consistency requirements for the query
-        def ordered_by(order_field, group_by_val, query={})
+        def ordered_by(order_field, group_by_val="\0", query={})
           order_name = order_field.to_s
           if orderings.include?(order_name)
             # identify the family and row to query
