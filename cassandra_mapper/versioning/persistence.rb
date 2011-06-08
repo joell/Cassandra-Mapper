@@ -43,6 +43,12 @@ module CassandraMapper
           @overwrite_key = write_key  if write_key != key
           result = super(write_key, *args)
           @overwrite_key = nil
+
+          # we need this here instead of in a post-save hook because Dirty
+          #   tracking clears attributes changed-state as the last thing after
+          #   a save
+          self.version += 1
+
           result
         end
 
@@ -60,6 +66,7 @@ module CassandraMapper
               without_versioning = true
             else
               key = @overwrite_key
+              self.version = deserialize_value(_raw_columns["version"], Integer) + 1
             end
           end
 
@@ -131,6 +138,10 @@ module CassandraMapper
         def version_group
           field = self.class.version_group_field
           field ? serialize_value(attributes[field]) : "\0"
+        end
+
+        def deserialize_value(*args)
+          CassandraMapper::Serialization.deserialize_value(*args)
         end
 
         def serialize_value(*args)

@@ -13,6 +13,8 @@ module CassandraMapper
       include Persistence
       include Retrieval
 
+      property :version, Integer, :default => 1
+
       private
       ZOMBIE_FAMILY  = "zombie_#{self.model_name.collection}"
       ACTIVES_FAMILY = "#{self.model_name.collection}_by_last_update"
