@@ -37,6 +37,7 @@ module CassandraMapper
             col = serialize_value(attributes[order_name])
             CassandraMapper.client.insert(column_family, row, {col => {self.key => ""}},
                                           :timestamp => timestamp)
+            true
           end
         end
 
@@ -50,6 +51,7 @@ module CassandraMapper
             col = serialize_value(attrs[order_name])
             CassandraMapper.client.remove(column_family, row, col, self.key)
           end
+          true
         end
 
         private

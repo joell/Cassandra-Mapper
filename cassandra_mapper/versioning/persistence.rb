@@ -41,8 +41,9 @@ module CassandraMapper
 
         def save(write_key = key, *args)
           @overwrite_key = write_key  if write_key != key
-          super(write_key, *args)
+          result = super(write_key, *args)
           @overwrite_key = nil
+          result
         end
 
         private
@@ -95,8 +96,8 @@ module CassandraMapper
 
             # save the old timestamp for when we update the "active" record post-save
             @_old_timestamp = timestamp
-            true
           end
+          true
         end
 
         def post_save_zombie
@@ -116,14 +117,15 @@ module CassandraMapper
             active_since = Cassandra::Long.new(timestamp).to_s
             CassandraMapper.client.insert(ACTIVES_FAMILY, version_group,
                                           {active_since => {key => ""}})
-          else true
           end
+          true
         end
 
         # Remove this doc's timestamp entry from the `actives' family.
         def deactivate(stamp = timestamp)
           active_since = Cassandra::Long.new(stamp).to_s
           CassandraMapper.client.remove(ACTIVES_FAMILY, version_group, active_since, key)
+          true
         end
 
         def version_group
