@@ -18,12 +18,12 @@ module CassandraMapper
 
       module InstanceMethods
         def update_orders
-          updated = self.class.orderings
+          updated = self.class.orderings.keys
           # TODO: BUG: This does not handle changes in the group_by field alone.
           updated &= changed  if not new?
           updated.each  do |order_name|
             # NOTE: We use a super column to avoid conflicts on the ordered value
-            group_by_field = self.class.properties[order_name][:options][:group_by]
+            group_by_field = self.class.orderings[order_name][:group_by]
             column_family = "#{self.class.model_name.collection}_by_#{order_name}"
 
             # if the old value was non-nil, then its entry must be removed from 
@@ -42,7 +42,7 @@ module CassandraMapper
 
             # add our key in the ordering at the location for our new ordered value
             row = group_by_field ? serialize_value(attributes[group_by_field]) : "\0"
-            col = serialize_value(attributes[order_name])
+            col = serialize_value(order_name == "key" ? key : attributes[order_name])
             CassandraMapper.client.insert(column_family, row, {col => {self.key => ""}},
                                           :timestamp => timestamp)
             true
@@ -50,13 +50,13 @@ module CassandraMapper
         end
 
         def remove_from_ordering
-          self.class.orderings.each  do |order_name|
+          self.class.orderings.each  do |(order_name, opts)|
             # NOTE: We use a super column to avoid conflicts on the ordered value
-            group_by = self.class.properties[order_name][:options][:group_by]
+            group_by = opts[:group_by]
             column_family = "#{self.class.model_name.collection}_by_#{order_name}"
             attrs = attributes.merge(changed_attributes)  # discard unwriten changes
             row = group_by ? serialize_value(attrs[group_by]) : "\0"
-            col = serialize_value(attrs[order_name])
+            col = serialize_value(order_name == "key" ? key : attrs[order_name])
             CassandraMapper.client.remove(column_family, row, col, self.key)
           end
           true

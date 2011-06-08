@@ -17,7 +17,7 @@ module CassandraMapper
         #   :consistency => Cassandra consistency requirements for the query
         def ordered_by(order_field, group_by_val="\0", query={})
           order_name = order_field.to_s
-          if orderings.include?(order_name)
+          if orderings.keys.include?(order_name)
             # identify the family and row to query
             column_family = "#{self.model_name.collection}_by_#{order_name}"
             row = serialize_value(group_by_val)
@@ -37,7 +37,7 @@ module CassandraMapper
             end
 
             # return the matching documents
-            order_type = properties[order_field][:type]
+            order_type = order_name != "key" ? properties[order_field][:type] : String
             doc_keys = super_columns.values.map(&:keys).flatten
             { :docs       => doc_keys.map  {|key| self.load(key)},
               :next_start => next_start && deserialize_value(next_start, order_type) }
@@ -49,7 +49,7 @@ module CassandraMapper
 
         def find_by(order_field, order_val, group_by_val="\0", options={})
           order_name = order_field.to_s
-          if orderings.include?(order_name)
+          if orderings.keys.include?(order_name)
             # ask for one more than our caller so we can provide a continuation index
             count = options[:count] += 1  if options.has_key? :count
             # preprocess the query start and finish values (if provided)
