@@ -47,7 +47,7 @@ module CassandraMapper
           end
         end
 
-        def find_by(order_field, group_by_val="\0", order_val)
+        def find_by(order_field, order_val, group_by_val="\0", options={})
           order_name = order_field.to_s
           if orderings.include?(order_name)
             # retreive the keys for all documents with a matching ordered value
