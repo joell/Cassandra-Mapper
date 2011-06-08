@@ -52,6 +52,9 @@ module CassandraMapper
           if orderings.include?(order_name)
             # ask for one more than our caller so we can provide a continuation index
             count = options[:count] += 1  if options.has_key? :count
+            # preprocess the query start and finish values (if provided)
+            options[:start]  = serialize_value(options[:start])   if options.has_key? :start
+            options[:finish] = serialize_value(options[:finish])  if options.has_key? :finish
             # retreive the keys for all documents with a matching ordered value
             column_family = "#{self.model_name.collection}_by_#{order_name}"
             row     = serialize_value(group_by_val)
