@@ -25,7 +25,12 @@ module CassandraMapper
             query[:start]  = serialize_value(query[:start])   if query.has_key? :start
             query[:finish] = serialize_value(query[:finish])  if query.has_key? :finish
             # ask for one more than our caller so we can provide a continuation index
-            count = query[:count] += 1  if query.has_key? :count
+            if query.has_key? :count
+              count = query[:count] += 1
+            else
+              count = query[:count] = 101  # default sequence length of 100
+            end
+
             # retreive the matching document keys
             super_columns = CassandraMapper.client.get(column_family, row, query)
 
@@ -51,7 +56,11 @@ module CassandraMapper
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
             # ask for one more than our caller so we can provide a continuation index
-            count = options[:count] += 1  if options.has_key? :count
+            if options.has_key? :count
+              count = options[:count] += 1
+            else
+              count = options[:count] = 101  # default sequence length of 100
+            end
             # preprocess the query start and finish values (if provided)
             options[:start]  = serialize_value(options[:start])   if options.has_key? :start
             options[:finish] = serialize_value(options[:finish])  if options.has_key? :finish
