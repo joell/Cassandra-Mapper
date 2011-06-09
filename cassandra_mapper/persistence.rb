@@ -84,6 +84,11 @@ module CassandraMapper
         was_success
       end
 
+      def update_attributes(attrs)
+        attributes = attrs
+        save
+      end
+
       def destroy(options={})
         _run_destroy_callbacks  do
           begin
