@@ -2,6 +2,7 @@ require 'active_model'
 require 'active_support/concern'
 require 'cassandra'
 require 'simple_uuid'
+require 'thrift'
 
 require 'cassandra_mapper/cassandra'
 require 'cassandra_mapper/serialization'
@@ -38,7 +39,9 @@ module CassandraMapper
       end
 
       def find(key, *args)
-        self.load(key, *args) rescue nil
+        self.load(key, *args)
+      rescue ::Thrift::Exception
+        nil
       end
 
       def column_family
