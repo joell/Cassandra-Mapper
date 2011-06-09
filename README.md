@@ -1,10 +1,10 @@
 **WARNING**
 
 This code should not be considered stable or reliable in even the furthest
-stretch of the imagination!  Feel free to read it, fork it and play with it,
-attempt to improve it, but expect it to work well, stably, or even at all.  It
-comes as is with no warrenty or expectations of functionality or safety any
-kind.
+stretch of the imagination!  Feel free to read it, fork it, play with it,
+and attempt to improve it; but do *not* expect it to work well, stably, or even
+at all.  It comes as is with no warrenty or expectations of functionality or
+safety any kind.
 
 If you use it in something important, you get to keep the pieces when it breaks!!
 
