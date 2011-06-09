@@ -56,11 +56,7 @@ module CassandraMapper
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
             # ask for one more than our caller so we can provide a continuation index
-            if options.has_key? :count
-              count = options[:count] += 1
-            else
-              count = options[:count] = 101  # default sequence length of 100
-            end
+            count = options[:count] += 1  if options.has_key? :count
             # preprocess the query start and finish values (if provided)
             options[:start]  = serialize_value(options[:start])   if options.has_key? :start
             options[:finish] = serialize_value(options[:finish])  if options.has_key? :finish
@@ -79,7 +75,7 @@ module CassandraMapper
 
             docs = cols.keys.map {|key| self.load(key)}
             # return the matching documents
-            if count
+            if options.has_key? count
               { :docs       => docs,
                 :next_start => next_start && deserialize_value(next_start, order_type) }
             else
