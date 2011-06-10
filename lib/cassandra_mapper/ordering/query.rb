@@ -75,7 +75,7 @@ module CassandraMapper
 
             docs = cols.keys.map {|key| self.load(key)}
             # return the matching documents
-            if options.has_key? count
+            if options.has_key?(:count)
               { :docs       => docs,
                 :next_start => next_start && deserialize_value(next_start, order_type) }
             else
