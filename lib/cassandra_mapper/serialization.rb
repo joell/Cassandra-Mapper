@@ -47,13 +47,14 @@ module CassandraMapper
             then CassandraMapper::Many.load(bytes, type[1], type[2])
           when type <= CassandraMapper::EmbeddedDocument
             then type.load(bytes)
+          when type <= String   then bytes
+          when type <= Boolean  then not bytes == "\0"
+          # special case to decode nil values for other types
+          when bytes == "\0"    then nil
           when type <= Time, type <= Date
             then int_to_time(deserialize_value(bytes, Integer), type)
           when type <= Integer  then Cassandra::Long.new(bytes).to_i
           when type <= Float    then bytes.unpack('G')[0]
-          when type <= String   then bytes
-          when type <= Boolean  then not bytes == "\0"
-          when bytes == "\0"    then nil
           else                       JSON.parse(bytes)
         end
       end
