@@ -22,6 +22,12 @@ module WriteCasts
     elsif type <= Date && value.is_a?(String)
       super(name, type.parse(value))
 
+    # support implicit numerical conversions
+    elsif type <= Float
+      super(name, value.to_f)
+    elsif type <= Integer
+      super(name, value.to_i)
+
     # support implicit conversion to a string
     elsif type == String
       super(name, value.to_s)
