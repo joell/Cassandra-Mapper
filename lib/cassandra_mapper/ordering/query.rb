@@ -24,28 +24,13 @@ module CassandraMapper
             # preprocess the query start and finish values (if provided)
             query[:start]  = serialize_value(query[:start])   if query.has_key? :start
             query[:finish] = serialize_value(query[:finish])  if query.has_key? :finish
-            # ask for one more than our caller so we can provide a continuation index
-            if query.has_key? :count
-              count = query[:count] += 1
-            else
-              count = query[:count] = 101  # default sequence length of 100
-            end
 
             # retreive the matching document keys
             super_columns = CassandraMapper.client.get(column_family, row, query)
 
-            # identify the next column to start with in order to continue this query
-            next_start = nil
-            if super_columns.length == count
-              next_start = super_columns.keys.last
-              super_columns.delete(next_start)
-            end
-
             # return the matching documents
-            order_type = order_name != "key" ? properties[order_field][:type] : String
             doc_keys = super_columns.values.map(&:keys).flatten
-            { :docs       => doc_keys.map  {|key| self.load(key)},
-              :next_start => next_start && deserialize_value(next_start, order_type) }
+            doc_keys.map  {|key| self.load(key)}
 
           else raise NotImplementedError,
                  "The field #{order_name} of #{self.name} is not ordered."
@@ -66,21 +51,8 @@ module CassandraMapper
             sup_col = serialize_value(order_val)
             cols    = CassandraMapper.client.get(column_family, row, sup_col, options)
 
-            # identify the next column to start with in order to continue this query
-            next_start = nil
-            if cols.length == count
-              next_start = cols.keys.last
-              cols.delete(next_start)
-            end
-
-            docs = cols.keys.map {|key| self.load(key)}
             # return the matching documents
-            if options.has_key?(:count)
-              { :docs       => docs,
-                :next_start => next_start && deserialize_value(next_start, order_type) }
-            else
-              docs
-            end
+            cols.keys.map {|key| self.load(key)}
           end
         end
 
