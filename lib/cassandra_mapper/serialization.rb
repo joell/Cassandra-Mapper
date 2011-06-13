@@ -70,7 +70,7 @@ module CassandraMapper
         case
           when type <= DateTime  then int_to_time(t, Time).to_datetime
           when type <= Date      then int_to_time(t, Time).to_date
-          when type <= Time      then Time.at(t)
+          when type <= Time      then Time.at(t).getutc
         end
       end
     end
