@@ -18,6 +18,7 @@ module CassandraMapper
         def ordered_by(order_field, group_by_val="\0", query={})
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
+            query = query.dup
             keys_only = query.delete(:keys_only)
 
             # identify the family and row to query
@@ -45,6 +46,7 @@ module CassandraMapper
         def find_by(order_field, order_val, group_by_val="\0", options={})
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
+            options = options.dup
             keys_only = options.delete(:keys_only)
 
             # ask for one more than our caller so we can provide a continuation index
