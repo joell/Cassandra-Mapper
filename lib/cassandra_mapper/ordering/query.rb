@@ -18,6 +18,8 @@ module CassandraMapper
         def ordered_by(order_field, group_by_val="\0", query={})
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
+            keys_only = query.delete(:keys_only)
+
             # identify the family and row to query
             column_family = "#{self.model_name.collection}_by_#{order_name}"
             row = serialize_value(group_by_val)
@@ -30,7 +32,10 @@ module CassandraMapper
 
             # return the matching documents
             doc_keys = super_columns.values.map(&:keys).flatten
-            doc_keys.map  {|key| self.load(key)}
+            if keys_only
+              then doc_keys
+              else doc_keys.map  {|key| self.load(key)}
+            end
 
           else raise NotImplementedError,
                  "The field #{order_name} of #{self.name} is not ordered."
@@ -40,6 +45,8 @@ module CassandraMapper
         def find_by(order_field, order_val, group_by_val="\0", options={})
           order_name = order_field.to_s
           if orderings.keys.include?(order_name)
+            keys_only = options.delete(:keys_only)
+
             # ask for one more than our caller so we can provide a continuation index
             count = options[:count] += 1  if options.has_key? :count
             # preprocess the query start and finish values (if provided)
@@ -52,7 +59,10 @@ module CassandraMapper
             cols    = CassandraMapper.client.get(column_family, row, sup_col, options)
 
             # return the matching documents
-            cols.keys.map {|key| self.load(key)}
+            if keys_only
+              then cols.keys
+              else cols.keys.map {|key| self.load(key)}
+            end
           end
         end
 
