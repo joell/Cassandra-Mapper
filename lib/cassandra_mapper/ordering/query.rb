@@ -28,11 +28,19 @@ module CassandraMapper
             query[:start]  = serialize_value(query[:start])   if query.has_key? :start
             query[:finish] = serialize_value(query[:finish])  if query.has_key? :finish
 
-            # retreive the matching document keys
+            # retreive the matching document keys in their supercolumn groupings
             super_columns = CassandraMapper.client.get(column_family, row, query)
 
-            # return the matching documents
-            doc_keys = super_columns.values.map(&:keys).flatten
+            # if this is a reverse query, then reverse all the columns within a supercolumn
+            key_groups = super_columns.values.map  do |sc|
+              if query[:reversed]
+                then sc.keys.reverse
+                else sc.keys
+              end
+            end
+
+            # return the documents / keys (depending on the :keys_only option)
+            doc_keys = key_groups.flatten
             if keys_only
               then doc_keys
               else doc_keys.map  {|key| self.load(key)}
