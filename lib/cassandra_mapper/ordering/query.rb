@@ -12,7 +12,7 @@ module CassandraMapper
         # Valid query attributes:
         #   :start    => start point in ordering
         #   :finish   => finish point in ordering
-        #   :count    => max number of results
+        #   :count    => max number of unique ordered-value groups to return documents from
         #   :reversed => reverse the ordering
         #   :consistency => Cassandra consistency requirements for the query
         def ordered_by(order_field, group_by_val="\0", query={})
