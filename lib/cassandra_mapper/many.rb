@@ -47,6 +47,7 @@ module CassandraMapper
     end
 
     def clear
+      embeds_will_change!
       @embeds = []
     end
 
