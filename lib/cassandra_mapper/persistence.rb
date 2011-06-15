@@ -26,21 +26,9 @@ module CassandraMapper
       end
 
       def load(key, options = {})
-        _raw_columns = CassandraMapper.client.get(column_family, key, options)
-        raise CassandraThrift::NotFoundException  if _raw_columns.empty?
-        # TODO: This is a nasty hack which only happens to work for the current
-        #   circumstances of our design.  This should be replaced with
-        #   a reasonable framework for internal, non-model-visible
-        #   attribtes/properties.
-        filtered_columns = self.active_authorizer.sanitize(_raw_columns)
-        new(CassandraMapper::Serialization.deserialize_attributes(filtered_columns, properties)).tap do |doc|
-          last_updated = _raw_columns.timestamps.values.max
-          doc.instance_variable_set(:@key, key)
-          doc.instance_variable_set(:@is_new, false)
-          doc.instance_variable_set(:@timestamp, last_updated)
-          doc.instance_variable_set(:@_raw_columns, _raw_columns)
-          doc.changed_attributes.clear
-        end
+        raw_columns = CassandraMapper.client.get(column_family, key, options)
+        raise CassandraThrift::NotFoundException  if raw_columns.empty?
+        _load_columns(key, raw_columns)
       end
 
       def find(key, *args)
@@ -51,6 +39,22 @@ module CassandraMapper
 
       def column_family
         model_name.collection
+      end
+
+      def _load_columns(key, raw_columns)
+        # TODO: This is a nasty hack which only happens to work for the current
+        #   circumstances of our design.  This should be replaced with
+        #   a reasonable framework for internal, non-model-visible
+        #   attribtes/properties.
+        filtered_columns = self.active_authorizer.sanitize(raw_columns)
+        new(CassandraMapper::Serialization.deserialize_attributes(filtered_columns, properties)).tap do |doc|
+          last_updated = raw_columns.timestamps.values.max
+          doc.instance_variable_set(:@key, key)
+          doc.instance_variable_set(:@is_new, false)
+          doc.instance_variable_set(:@timestamp, last_updated)
+          doc.instance_variable_set(:@_raw_columns, raw_columns)
+          doc.changed_attributes.clear
+        end
       end
     end
 

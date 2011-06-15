@@ -3,6 +3,7 @@ require 'active_support/concern'
 require 'cassandra_mapper/versioning/persistence'
 require 'cassandra_mapper/versioning/properties'
 require 'cassandra_mapper/versioning/retrieval'
+require 'cassandra_mapper/versioning/query_timeline'
 
 module CassandraMapper
   module Versioning
@@ -12,6 +13,7 @@ module CassandraMapper
       extend  Properties
       include Persistence
       include Retrieval
+      include QueryTimeline
 
       property :version, Integer, :default => 1
 

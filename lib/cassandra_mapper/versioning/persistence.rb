@@ -83,14 +83,16 @@ module CassandraMapper
             self.class.properties.delete("birth_timestamp")
 
             # maximum-value timestamp for death is interpreted as "alive"
-            @attributes[:death_timestamp] = Cassandra::Long.new("\xff"*8).to_s  if new?
+            max_long = Cassandra::Long.new("\x7f\xff\xff\xff\xff\xff\xff\xff")
+            @attributes[:death_timestamp] = max_long.to_s  if new?
           end
 
           # if appropriate, retain a copy of the current version of the document
           unless without_versioning || new?
             # save a copy of the old version of the document (a zombie)
             zombie_key = generate_key
-            _raw_columns["death_timestamp"] = serialize_value(now)
+            _raw_columns["active_version_key"] = key
+            _raw_columns["death_timestamp"]    = serialize_value(now)
             CassandraMapper.client.insert(self.class.column_family, zombie_key,
                                           _raw_columns)
 

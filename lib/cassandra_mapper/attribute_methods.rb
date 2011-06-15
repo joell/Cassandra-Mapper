@@ -22,7 +22,8 @@ module CassandraMapper
       include ActiveModel::MassAssignmentSecurity
 
       attr_protected :key, :_raw_columns, :timestamp     # defined in Persistence
-      attr_protected :birth_timestamp, :death_timestamp  # for versioning time queries
+      # for versioning time queries
+      attr_protected :birth_timestamp, :death_timestamp, :active_version_key
     end
 
     module ClassMethods
