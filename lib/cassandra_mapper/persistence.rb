@@ -28,7 +28,12 @@ module CassandraMapper
       def load(key, options = {})
         _raw_columns = CassandraMapper.client.get(column_family, key, options)
         raise CassandraThrift::NotFoundException  if _raw_columns.empty?
-        new(CassandraMapper::Serialization.deserialize_attributes(_raw_columns, properties)).tap do |doc|
+        # TODO: This is a nasty hack which only happens to work for the current
+        #   circumstances of our design.  This should be replaced with
+        #   a reasonable framework for internal, non-model-visible
+        #   attribtes/properties.
+        filtered_columns = self.active_authorizer.sanitize(_raw_columns)
+        new(CassandraMapper::Serialization.deserialize_attributes(filtered_columns, properties)).tap do |doc|
           last_updated = _raw_columns.timestamps.values.max
           doc.instance_variable_set(:@key, key)
           doc.instance_variable_set(:@is_new, false)

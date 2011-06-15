@@ -70,10 +70,27 @@ module CassandraMapper
             end
           end
 
+          now = Time.stamp
+
+          #   Temporarily create lifespan timestamp attributes to get them
+          # into the db.
+          if new? || !without_versioning
+            # TODO: This is a nasty hack, but it works for now.  What we really
+            #   need is a framework for internal, non-model-visible
+            #   attribtes/properties.
+            self.class.properties["birth_timestamp"] = {:type => Time}
+            self.send(:attribute=, "birth_timestamp", now)
+            self.class.properties.delete("birth_timestamp")
+
+            # maximum-value timestamp for death is interpreted as "alive"
+            @attributes[:death_timestamp] = Cassandra::Long.new("\xff"*8).to_s  if new?
+          end
+
           # if appropriate, retain a copy of the current version of the document
           unless without_versioning || new?
             # save a copy of the old version of the document (a zombie)
             zombie_key = generate_key
+            _raw_columns["death_timestamp"] = serialize_value(now)
             CassandraMapper.client.insert(self.class.column_family, zombie_key,
                                           _raw_columns)
 
@@ -118,6 +135,11 @@ module CassandraMapper
           # Update this doc's timestamp entry from the `actives' family after
           # it was saved and we have the new timestamp.
           unless @without_versioning
+            # remove the temporary lifespan timestamp attributes; they must exist
+            #   only in the db and should not be visible in the model
+            @attributes.delete(:birth_timestamp)
+            @attributes.delete(:death_timestamp)
+
             # remove the old timestamp entry
             deactivate(@_old_timestamp)  unless new?
             # write a new timestamp entry
