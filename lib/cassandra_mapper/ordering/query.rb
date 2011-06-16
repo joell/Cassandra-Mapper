@@ -1,5 +1,6 @@
 require 'active_model/attribute_methods'
 require 'active_support/concern'
+require 'cassandra'
 
 require 'cassandra_mapper/serialization'
 
@@ -43,12 +44,15 @@ module CassandraMapper
             doc_keys = key_groups.flatten
             if keys_only
               then doc_keys
-              else doc_keys.map  {|key| self.load(key)}
+              else (doc_keys.map {|key| self.find(key)}).delete_if(&:nil?)
             end
 
           else raise NotImplementedError,
                  "The field #{order_name} of #{self.name} is not ordered."
           end
+
+        rescue CassandraThrift::NotFoundException
+          []
         end
 
         def find_by(order_field, order_val, group_by_val="\0", options={})
@@ -71,9 +75,12 @@ module CassandraMapper
             # return the matching documents
             if keys_only
               then cols.keys
-              else cols.keys.map {|key| self.load(key)}
+              else (cols.keys.map {|key| self.find(key)}).delete_if(&:nil?)
             end
           end
+
+        rescue CassandraThrift::NotFoundException
+          []
         end
 
         def find_by_index(indexed_field, value, options={})
