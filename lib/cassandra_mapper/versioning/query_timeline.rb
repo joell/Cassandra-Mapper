@@ -1,5 +1,6 @@
 require 'active_support/concern'
 require 'active_support/core_ext/hash/slice'
+require 'cassandra'
 
 require 'cassandra_mapper/cassandra'
 
