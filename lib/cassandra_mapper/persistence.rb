@@ -97,7 +97,7 @@ module CassandraMapper
       end
 
       def update_attributes(attrs)
-        attributes = attrs
+        self.attributes = attrs
         save
       end
 
