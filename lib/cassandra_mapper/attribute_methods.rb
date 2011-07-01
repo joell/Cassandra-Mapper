@@ -1,6 +1,7 @@
 require 'active_model'
 require 'active_support/concern'
 require 'active_support/core_ext/hash/indifferent_access'
+require 'active_support/core_ext/object/duplicable'
 
 require 'cassandra_mapper/attribute_methods/read'
 require 'cassandra_mapper/attribute_methods/write'
@@ -40,7 +41,10 @@ module CassandraMapper
         @attributes = {}.with_indifferent_access
         self.attributes = self.class.properties.reduce({})  do |as, prop|
             opts = prop[1][:options]
-            as[prop[0]] = opts[:default]  if opts.has_key? :default
+            if opts.has_key? :default
+              default = opts[:default]
+              as[prop[0]] = default.duplicable? ? default.dup : default;
+            end
             as
           end
         changed_attributes.clear       # default values don't count as "changed"

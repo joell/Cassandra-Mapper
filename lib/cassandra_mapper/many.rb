@@ -28,6 +28,11 @@ module CassandraMapper
       self
     end
 
+    def initialize_copy(source)
+      super
+      @embeds = @embeds.dup
+    end
+
     def each(&block)
       embeds.each(&block)
     end
