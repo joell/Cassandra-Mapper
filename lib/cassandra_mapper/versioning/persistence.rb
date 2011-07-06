@@ -18,6 +18,17 @@ module CassandraMapper
         property :_num_versions, Integer, :default => 0
       end
 
+      module ClassMethods
+        def _obliterate_callbacks
+          @_obliterate_callbacks ||= []
+        end
+
+        def before_obliterate(*methods)
+          @_obliterate_callbacks ||= []
+          @_obliterate_callbacks += methods
+        end
+      end
+
       module InstanceMethods
         # execute a block that saves the document without the changes being versioned
         def without_versioning
@@ -29,14 +40,18 @@ module CassandraMapper
 
         def permanently_destroy
           @without_versioning = true
-          destroy
 
           # destroy the zombies
           CassandraMapper.client.get(ZOMBIE_FAMILY, key).values.each  do |zombie_key|
-            CassandraMapper.client.remove(self.class.column_family, zombie_key)
+            obliterate_zombie(zombie_key)
           end
           # destroy the zombie record
           CassandraMapper.client.remove(ZOMBIE_FAMILY, key)
+
+          # destroy the active document itself
+          _run_obliterate_callbacks  do
+            destroy
+          end
         end
 
         def save(write_key = key, *args)
@@ -50,6 +65,28 @@ module CassandraMapper
         end
 
         private
+        def _run_obliterate_callbacks(zombie_parent = nil)
+          self.class._obliterate_callbacks.each  do |callback|
+            self.send(callback, zombie_parent)
+          end
+
+          yield
+        end
+
+        # Permanently remove a zombie from the class's column family.
+        def obliterate_zombie(key)
+          obliterate = lambda do
+            CassandraMapper.client.remove(self.class.column_family, key)
+          end
+
+          if !self.class._obliterate_callbacks.empty? && !(zombie = self.class.find(key)).nil?
+            zombie.freeze.send(:_run_obliterate_callbacks, self, &obliterate)
+          else
+            obliterate.call
+          end
+        end
+
+        # TODO: This function is obscenely large and should be broken down.
         def save_zombie(*args)
           key = self.key
           without_versioning = @without_versioning
@@ -110,7 +147,7 @@ module CassandraMapper
                   # remove the zombie from our record
                   CassandraMapper.client.remove(ZOMBIE_FAMILY, key, col)
                   # destroy the zombie
-                  CassandraMapper.client.remove(self.class.column_family, k)
+                  obliterate_zombie(k)
                 end
 
                 self._num_versions = self.class.max_versions
