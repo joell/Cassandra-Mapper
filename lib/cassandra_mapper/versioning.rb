@@ -15,7 +15,7 @@ module CassandraMapper
       include Retrieval
       include QueryTimeline
 
-      property :version, Integer, :default => 1
+      property :version, Integer, :default => 0
 
       private
       ZOMBIE_FAMILY  ||= "zombie_#{self.model_name.collection}"

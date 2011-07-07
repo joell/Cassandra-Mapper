@@ -40,14 +40,11 @@ module CassandraMapper
         end
 
         def save(write_key = key, *args)
+          self.version += 1
+
           @overwrite_key = write_key  if write_key != key
           result = super(write_key, *args)
           @overwrite_key = nil
-
-          # we need this here instead of in a post-save hook because Dirty
-          #   tracking clears attributes changed-state as the last thing after
-          #   a save
-          self.version += 1
 
           result
         end
