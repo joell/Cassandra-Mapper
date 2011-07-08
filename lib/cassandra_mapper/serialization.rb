@@ -28,7 +28,10 @@ module CassandraMapper
           when NilClass               then "\0"
           when Integer                then Cassandra::Long.new(v).to_s
           when Float                  then [v].pack('G')
-          when String                 then v
+          # TODO: Properly differentiate between String-typed attributes and
+          #   other values that happen to be strings and ensure that the
+          #   attribute Strings are encoded using UTF-8.
+          when String                 then v.force_encoding("BINARY")
           when TrueClass, FalseClass  then v ? "\1" : "\0"
           when Time, Date             then serialize_value(time_to_int(v))
           when CassandraMapper::Many,
@@ -47,7 +50,7 @@ module CassandraMapper
             then CassandraMapper::Many.load(bytes, type[1], type[2])
           when type <= CassandraMapper::EmbeddedDocument
             then type.load(bytes)
-          when type <= String   then bytes
+          when type <= String   then bytes.force_encoding("UTF-8")
           when type <= Boolean  then not bytes == "\0"
           # special case to decode nil values for other types
           when bytes == "\0"    then nil
