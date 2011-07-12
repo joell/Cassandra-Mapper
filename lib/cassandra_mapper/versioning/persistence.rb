@@ -42,11 +42,11 @@ module CassandraMapper
           @without_versioning = true
 
           # destroy the zombies
-          CassandraMapper.client.get(ZOMBIE_FAMILY, key).values.each  do |zombie_key|
+          CassandraMapper.client.get(self.class.zombie_family, key).values.each  do |zombie_key|
             obliterate_zombie(zombie_key)
           end
           # destroy the zombie record
-          CassandraMapper.client.remove(ZOMBIE_FAMILY, key)
+          CassandraMapper.client.remove(self.class.zombie_family, key)
 
           # destroy the active document itself
           _run_obliterate_callbacks  do
@@ -133,7 +133,7 @@ module CassandraMapper
             # add a zombie entry for the new doc mapped to this one's pre-save timestamp
             cols = {LONG_ZERO => version_group,
                     Cassandra::Long.new(timestamp).to_s => zombie_key}
-            CassandraMapper.client.insert(ZOMBIE_FAMILY, key, cols)
+            CassandraMapper.client.insert(self.class.zombie_family, key, cols)
 
             if not @overwrite_key
               self._num_versions += 1
@@ -141,11 +141,11 @@ module CassandraMapper
               if self._num_versions > self.class.max_versions
                 surplus = self._num_versions - self.class.max_versions
                 # get the entry for the outdated zombies
-                outdated = CassandraMapper.client.get(ZOMBIE_FAMILY, key,
+                outdated = CassandraMapper.client.get(self.class.zombie_family, key,
                                                       :start => 1, :count => surplus)
                 outdated.each do |col, k|
                   # remove the zombie from our record
-                  CassandraMapper.client.remove(ZOMBIE_FAMILY, key, col)
+                  CassandraMapper.client.remove(self.class.zombie_family, key, col)
                   # destroy the zombie
                   obliterate_zombie(k)
                 end
@@ -165,7 +165,7 @@ module CassandraMapper
           #   old-versions count consistent.
           if @overwrite_key
             # NOTE: We subtract one for the grouping-index column 0.
-            self._num_versions = CassandraMapper.client.count_columns(ZOMBIE_FAMILY, key)-1
+            self._num_versions = CassandraMapper.client.count_columns(self.class.zombie_family, key)-1
           end
 
           # Update this doc's timestamp entry from the `actives' family after
@@ -180,7 +180,7 @@ module CassandraMapper
             deactivate(@_old_timestamp)  unless new?
             # write a new timestamp entry
             active_since = Cassandra::Long.new(timestamp).to_s
-            CassandraMapper.client.insert(ACTIVES_FAMILY, version_group,
+            CassandraMapper.client.insert(self.class.actives_family, version_group,
                                           {active_since => {key => ""}})
           end
           true
@@ -189,7 +189,8 @@ module CassandraMapper
         # Remove this doc's timestamp entry from the `actives' family.
         def deactivate(stamp = timestamp)
           active_since = Cassandra::Long.new(stamp).to_s
-          CassandraMapper.client.remove(ACTIVES_FAMILY, version_group, active_since, key)
+          CassandraMapper.client.remove(self.class.actives_family, version_group,
+                                        active_since, key)
           true
         end
 
