@@ -18,17 +18,6 @@ module CassandraMapper
         property :_num_versions, Integer, :default => 0
       end
 
-      module ClassMethods
-        def _obliterate_callbacks
-          @_obliterate_callbacks ||= []
-        end
-
-        def before_obliterate(*methods)
-          @_obliterate_callbacks ||= []
-          @_obliterate_callbacks += methods
-        end
-      end
-
       module InstanceMethods
         # execute a block that saves the document without the changes being versioned
         def without_versioning

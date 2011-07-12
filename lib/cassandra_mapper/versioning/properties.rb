@@ -19,6 +19,15 @@ module CassandraMapper
       end
 
       attr_reader :version_group_field
+
+      def before_obliterate(*methods)
+        @@_obliterate_callbacks ||= []
+        @@_obliterate_callbacks += methods
+      end
+
+      def _obliterate_callbacks
+        @@_obliterate_callbacks ||= []
+      end
     end
   end
 end
