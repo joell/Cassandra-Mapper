@@ -7,7 +7,7 @@ Echoe.new('cassandra-mapper', '0.0.1')  do |p|
   p.author               = "Joel Lathrop"
   p.url                  = "http://github.com/joell/Cassandra-Mapper"
   p.ignore_pattern       = ["tmp/*"]
-  p.runtime_dependencies = ["cassandra >=0.11",
+  p.runtime_dependencies = ["cassandra >=0.11.3",
                             "activemodel ~>3.0.0",
                             "activesupport ~>3.0.0",
                             "simple_uuid >=0.1.2"]
