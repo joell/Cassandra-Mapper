@@ -1,6 +1,7 @@
 require 'active_support/core_ext/hash/keys'
 require 'cassandra'
 require 'erb'
+require 'thrift'
 require 'yaml'
 
 module CassandraMapper
@@ -12,7 +13,7 @@ module CassandraMapper
         Cassandra::READ_DEFAULTS[:consistency]  = Cassandra::Consistency::QUORUM
         @is_consistency_set = true
       end
-      Thread.current[:cassandra_mapper_client] ||= Cassandra.new(*client_config)
+      Thread.current[:cassandra_mapper_client] ||= CassandraWrapper.new(*client_config)
     end
 
     def client_config
@@ -25,6 +26,37 @@ module CassandraMapper
       @config[:options] ||= {}
       @config[:options].symbolize_keys!
       true
+    end
+  end
+
+  # NOTE:
+  #   There is an as-yet-undiscovered trigger that causes the socket object of
+  # the Cassandra Ruby API's Thrift client to be closed.  This then causes the
+  # next Cassandra operation to throw an "IOError: closed stream" when a socket
+  # write is attempted.
+  #   To circumvent this for now, we have resorted to the ugly hack found below.
+  # Whenever the client object is requested, we check if the corresponding
+  # socket has been closed, and if it has we force a reconnection.
+  private
+  class CassandraWrapper < Cassandra
+    def initialize(keyspace, servers, opts)
+      super(keyspace, servers, opts.merge(:thrift_client_class => ThriftClientWrapper))
+    end
+
+    def client
+      reconnect!  unless connected?
+      super
+    end
+
+    def connected?
+      !@client.nil? && !@client.current_server.nil? && @client.connected?
+    end
+
+    private
+    class ThriftClientWrapper < ThriftClient
+      def connected?
+        !@connection.nil? && @connection.transport.open?
+      end
     end
   end
 end
