@@ -19,7 +19,9 @@ module CassandraMapper
 
       def deserialize_attributes(raw_attrs, props)
         raw_attrs.each_with_object({})  do |(k,v), h|
-          h[k] = deserialize_value(v, props[k][:type])
+          if props.has_key?(k)  # ignore old database fields no longer in the property list
+            h[k] = deserialize_value(v, props[k][:type])
+          end
         end
       end
 
