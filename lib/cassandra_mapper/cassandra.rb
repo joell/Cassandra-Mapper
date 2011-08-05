@@ -22,7 +22,7 @@ module CassandraMapper
 
     def load_configuration(config_file)
       hash = YAML.load(ERB.new(File.read(config_file)).result)
-      @config = hash['cassandra_mapper'].symbolize_keys
+      @config = hash[Rails.env].symbolize_keys
       @config[:options] ||= {}
       @config[:options].symbolize_keys!
       true
