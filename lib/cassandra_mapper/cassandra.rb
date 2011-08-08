@@ -20,9 +20,9 @@ module CassandraMapper
       @config.values_at(:keyspace, :server, :options)
     end
 
-    def load_configuration(config_file)
+    def load_configuration(config_file, heading = "development")
       hash = YAML.load(ERB.new(File.read(config_file)).result)
-      @config = hash[Rails.env].symbolize_keys
+      @config = hash[heading].symbolize_keys
       @config[:options] ||= {}
       @config[:options].symbolize_keys!
       true

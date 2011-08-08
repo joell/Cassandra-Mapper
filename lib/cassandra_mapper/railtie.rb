@@ -6,7 +6,7 @@ module CassandraMapper
     initializer "cassandra.configure_rails_initialization" do
       default_config_path = Rails.root.join('config', 'cassandra.yml')
       if File.exists?(default_config_path)
-        CassandraMapper.load_configuration(default_config_path)
+        CassandraMapper.load_configuration(default_config_path, Rails.env)
       end
     end
   end
