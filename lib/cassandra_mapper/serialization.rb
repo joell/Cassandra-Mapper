@@ -51,7 +51,7 @@ module CassandraMapper
           when type.class == Array && type[0] == CassandraMapper::Many
             then CassandraMapper::Many.load(bytes, type[1], type[2])
           when type <= CassandraMapper::EmbeddedDocument
-            then type.load(bytes)
+            then bytes != "\0" ? type.load(bytes) : nil
           when type <= String   then bytes.dup.force_encoding("UTF-8")
           when type <= Boolean  then not bytes == "\0"
           # special case to decode nil values for other types
