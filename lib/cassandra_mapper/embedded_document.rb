@@ -52,25 +52,25 @@ module CassandraMapper
           other.instance_variable_get(:@attributes) == attributes
       end
 
-      def as_json(options = nil)
+      def as_json(*args)
         # do the shallow, one-level conversion
-        super(options).tap do |partial|
-
+        super(*args).tap do |partial|
           # find all properties that are embedded documents
           embed_props = self.class.properties.select  do |k,v|
             type = v[:type]
             type.class == Array && type[0] == CassandraMapper::Many ||
               type <= CassandraMapper::EmbeddedDocument
           end
+
           # recursively apply the conversion to the embeds
           embed_props.keys.each  do |attr|
-            partial[attr] = partial[attr].as_json
+            partial[attr] = partial[attr].as_json(*args)
           end
         end
       end
 
       def save_to_bytes
-        to_json.tap do
+        to_json(:db_serialization => true).tap do
           changed_attributes.clear
         end
       end

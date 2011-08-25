@@ -64,12 +64,12 @@ module CassandraMapper
       @embeds.map {|e| e.as_json(*args)}
     end
 
-    def to_json
-      as_json.to_json
+    def to_json(*args)
+      as_json(*args).to_json
     end
 
     def save_to_bytes
-      to_json.tap do
+      to_json(:db_serialization => true).tap do
         changed_attributes.clear
       end
     end
