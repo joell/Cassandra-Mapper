@@ -24,7 +24,7 @@ module CassandraMapper
           updated.each  do |order_name|
             # NOTE: We use a super column to avoid conflicts on the ordered value
             group_by_field = self.class.orderings[order_name][:group_by]
-            column_family = "#{self.class.model_name.collection}_by_#{order_name}"
+            column_family = "#{self.class.column_family}_by_#{order_name}"
 
             # if the old value was non-nil, then its entry must be removed from 
             #   the ordering
@@ -53,7 +53,7 @@ module CassandraMapper
           self.class.orderings.each  do |(order_name, opts)|
             # NOTE: We use a super column to avoid conflicts on the ordered value
             group_by = opts[:group_by]
-            column_family = "#{self.class.model_name.collection}_by_#{order_name}"
+            column_family = "#{self.class.column_family}_by_#{order_name}"
             attrs = attributes.merge(changed_attributes)  # discard unwriten changes
             row = group_by ? serialize_value(attrs[group_by]) : "\0"
             col = serialize_value(order_name == "key" ? key : attrs[order_name])

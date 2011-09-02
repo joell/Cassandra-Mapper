@@ -23,7 +23,7 @@ module CassandraMapper
             keys_only = query.delete(:keys_only)
 
             # identify the family and row to query
-            column_family = "#{self.model_name.collection}_by_#{order_name}"
+            column_family = "#{self.column_family}_by_#{order_name}"
             row = serialize_value(group_by_val)
             # preprocess the query start and finish values (if provided)
             query[:start]  = serialize_value(query[:start])   if query.has_key? :start
@@ -67,7 +67,7 @@ module CassandraMapper
             options[:start]  = serialize_value(options[:start])   if options.has_key? :start
             options[:finish] = serialize_value(options[:finish])  if options.has_key? :finish
             # retreive the keys for all documents with a matching ordered value
-            column_family = "#{self.model_name.collection}_by_#{order_name}"
+            column_family = "#{self.column_family}_by_#{order_name}"
             row     = serialize_value(group_by_val)
             sup_col = serialize_value(order_val)
             cols    = CassandraMapper.client.get(column_family, row, sup_col, options)

@@ -20,11 +20,11 @@ module CassandraMapper
 
     module ClassMethods
       def zombie_family
-        @zombie_family ||= "zombie_#{self.model_name.collection}"
+        @zombie_family ||= "zombie_#{self.column_family}"
       end
 
       def actives_family
-        @actives_family ||= "#{self.model_name.collection}_by_last_update"
+        @actives_family ||= "#{self.column_family}_by_last_update"
       end
     end
   end
